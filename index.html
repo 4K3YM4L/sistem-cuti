@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pengurusan Cuti Anggota</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+</head>
+<body>
+    <div class="container mt-4">
+        <h2>Senarai Cuti Anggota</h2>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Nama</th>
+                    <th>Jawatan</th>
+                    <th>Tarikh Cuti</th>
+                    <th>Sebab</th>
+                    <th>Tindakan</th>
+                </tr>
+            </thead>
+            <tbody id="cutiList"></tbody>
+        </table>
+
+        <h3>Tambah Cuti</h3>
+        <form id="cutiForm">
+            <input type="text" id="nama" class="form-control mb-2" placeholder="Nama" required>
+            <input type="text" id="jawatan" class="form-control mb-2" placeholder="Jawatan" required>
+            <input type="date" id="tarikh_cuti" class="form-control mb-2" required>
+            <input type="text" id="sebab" class="form-control mb-2" placeholder="Sebab" required>
+            <button type="submit" class="btn btn-primary">Tambah Cuti</button>
+        </form>
+    </div>
+
+    <script>
+        const supabaseUrl = "https://aqevbkviwaghlutkcfnd.supabase.co";
+        const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxZXZia3Zpd2FnaGx1dGtjZm5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI4MjAwNTgsImV4cCI6MjA1ODM5NjA1OH0.YY_qzt2iXQMYJUCneicRkoHsh0A-0m_BOTnzkyvnjdw";
+        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+        async function loadCuti() {
+            const { data, error } = await supabase.from("cuti").select("*");
+            if (error) console.error(error);
+            document.getElementById("cutiList").innerHTML = data.map(cuti => `
+                <tr>
+                    <td>${cuti.nama}</td>
+                    <td>${cuti.jawatan}</td>
+                    <td>${cuti.tarikh_cuti}</td>
+                    <td>${cuti.sebab}</td>
+                    <td><button class="btn btn-danger" onclick="deleteCuti(${cuti.id})">Padam</button></td>
+                </tr>
+            `).join("");
+        }
+
+        async function addCuti(event) {
+            event.preventDefault();
+            const nama = document.getElementById("nama").value;
+            const jawatan = document.getElementById("jawatan").value;
+            const tarikh_cuti = document.getElementById("tarikh_cuti").value;
+            const sebab = document.getElementById("sebab").value;
+
+            await supabase.from("cuti").insert([{ nama, jawatan, tarikh_cuti, sebab }]);
+            document.getElementById("cutiForm").reset();
+            loadCuti();
+        }
+
+        async function deleteCuti(id) {
+            await supabase.from("cuti").delete().eq("id", id);
+            loadCuti();
+        }
+
+        document.getElementById("cutiForm").addEventListener("submit", addCuti);
+        loadCuti();
+    </script>
+</body>
+</html>
