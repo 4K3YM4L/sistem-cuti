@@ -7,22 +7,16 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
 </head>
-<body class="container mt-5">
-    <h2 class="mb-4 text-center">📅 Sistem Pengurusan Cuti</h2>
-
-    <div class="d-flex justify-content-end">
-        <button class="btn btn-danger mb-3" onclick="deleteAllCuti()">
-            <i class="fas fa-trash"></i> Padam Semua
-        </button>
-    </div>
-
+<body class="container mt-5" style="background-color:rgb(255, 255, 255);">
     <table class="table table-bordered">
         <thead class="table-dark">
             <tr>
                 <th>Nama</th>
                 <th>Unit</th>
                 <th>Pangkat</th>
-                <th>Tarikh</th>
+                <th>Tarikh Mula</th>
+                <th>Tarikh Akhir</th>
+                <th>Tempoh (hari)</th>
                 <th>Sebab</th>
                 <th>Padam</th>
             </tr>
@@ -32,7 +26,7 @@
     
     <div class="card shadow-sm mt-4">
         <div class="card-header bg-primary text-white">
-            <h4 class="mb-0 text-center">Tambah Cuti</h4>
+            <h4 class="mb-0 text-center">MAKLUMAT</h4>
         </div>
         <div class="card-body">
             <div class="mb-3">
@@ -48,22 +42,26 @@
                 <input id="pangkat" class="form-control" placeholder="Masukkan Pangkat">
             </div>
             <div class="mb-3">
-                <label class="form-label">Tarikh Cuti</label>
-                <input id="tarikh" class="form-control" type="date">
+                <label class="form-label">Tarikh Mula</label>
+                <input id="tarikhMula" class="form-control" type="date">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Tarikh Akhir</label>
+                <input id="tarikhAkhir" class="form-control" type="date">
             </div>
             <div class="mb-3">
                 <label class="form-label">Sebab</label>
                 <textarea id="sebab" class="form-control" rows="2" placeholder="Nyatakan Sebab Cuti"></textarea>
             </div>
             <button class="btn btn-success w-100" onclick="addCuti()">
-                <i class="fas fa-plus"></i> Tambah
+                <i class="fas fa-plus"></i> 
             </button>
         </div>
     </div>
 
     <script>
-        const jsonBinUrl = "https://api.jsonbin.io/v3/b/67e160888561e97a50f1e24d"; // Gantikan dengan BIN ID anda
-        const apiKey = "$2a$10$KuvaRPtUxYiFJythCMsN/OBN4TNbN7Nt7ZChz5KPHaiIpdTbiF.kG"; // Gantikan dengan API Key anda
+        const jsonBinUrl = "https://api.jsonbin.io/v3/b/67e160888561e97a50f1e24d";
+        const apiKey = "$2a$10$KuvaRPtUxYiFJythCMsN/OBN4TNbN7Nt7ZChz5KPHaiIpdTbiF.kG";
 
         async function getData() {
             const response = await fetch(jsonBinUrl + "/latest", {
@@ -88,12 +86,27 @@
         async function loadTable() {
             const cutiData = await getData();
             let rows = "";
+            const today = new Date();
+            
             cutiData.forEach((cuti, index) => {
-                rows += `<tr>
+                const startDate = new Date(cuti.tarikhMula);
+                const endDate = new Date(cuti.tarikhAkhir);
+                const duration = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                let rowClass = "";
+                
+                if (today > endDate) {
+                    rowClass = "table-danger"; // Cuti telah tamat
+                } else if (today >= startDate && today <= endDate) {
+                    rowClass = "table-success"; // Cuti sedang berlangsung
+                }
+
+                rows += `<tr class="${rowClass}">
                     <td>${cuti.nama}</td>
                     <td>${cuti.unit}</td>
                     <td>${cuti.pangkat}</td>
-                    <td>${cuti.tarikh}</td>
+                    <td>${cuti.tarikhMula}</td>
+                    <td>${cuti.tarikhAkhir}</td>
+                    <td>${duration}</td>
                     <td>${cuti.sebab}</td>
                     <td>
                         <button class="btn btn-danger btn-sm" onclick="deleteCuti(${index})">
@@ -109,23 +122,24 @@
             const nama = document.getElementById("nama").value;
             const unit = document.getElementById("unit").value;
             const pangkat = document.getElementById("pangkat").value;
-            const tarikh = document.getElementById("tarikh").value;
+            const tarikhMula = document.getElementById("tarikhMula").value;
+            const tarikhAkhir = document.getElementById("tarikhAkhir").value;
             const sebab = document.getElementById("sebab").value;
             
-            if (!nama || !unit || !pangkat || !tarikh || !sebab) {
+            if (!nama || !unit || !pangkat || !tarikhMula || !tarikhAkhir || !sebab) {
                 alert("Sila isi semua maklumat!");
                 return;
             }
 
             const cutiData = await getData();
-            cutiData.push({ nama, unit, pangkat, tarikh, sebab });
+            cutiData.push({ nama, unit, pangkat, tarikhMula, tarikhAkhir, sebab });
             await saveData(cutiData);
 
-            // Kosongkan borang
             document.getElementById("nama").value = "";
             document.getElementById("unit").value = "";
             document.getElementById("pangkat").value = "";
-            document.getElementById("tarikh").value = "";
+            document.getElementById("tarikhMula").value = "";
+            document.getElementById("tarikhAkhir").value = "";
             document.getElementById("sebab").value = "";
         }
 
@@ -134,11 +148,6 @@
             let data = await getData();
             data.splice(index, 1);
             await saveData(data);
-        }
-
-        async function deleteAllCuti() {
-            if (!confirm("Anda pasti mahu padam semua data?")) return;
-            await saveData([]);
         }
 
         loadTable();
